@@ -29,8 +29,8 @@
 4. Build
 
     ```bash
-    ./update_kernel.sh
     ./build_kernel.sh
+    ./update_kernel.sh
     ```
 
 5. Reboot
