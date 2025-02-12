@@ -1,0 +1,10 @@
+commit 6d16e47ca139ba64c5daedf06e72f2774adbdc48
+Author: Phil Elwell <8911409+pelwell@users.noreply.github.com>
+Date:   Wed Jan 22 14:43:48 2025 +0000
+
+    drm/v3d: Fix race-condition between DRM scheduler and IRQs
+    
+    Link: https://github.com/raspberrypi/linux/issues/6624
+    Fixes: e4b5ccd392b9 ("drm/v3d: Ensure job pointer is set to NULL after job completion")
+    Signed-off-by: Maíra Canal <mcanal@igalia.com>
+    Co-authored-by: Maíra Canal <mcanal@igalia.com>

@@ -1,0 +1,178 @@
+diff --git a/drivers/media/i2c/imx500.c b/drivers/media/i2c/imx500.c
+index 15e7d3f7d..39fff393c 100644
+--- a/drivers/media/i2c/imx500.c
++++ b/drivers/media/i2c/imx500.c
+@@ -235,6 +235,8 @@ enum pad_types { IMAGE_PAD, METADATA_PAD, NUM_PADS };
+ 
+ #define V4L2_CID_USER_IMX500_INFERENCE_WINDOW (V4L2_CID_USER_IMX500_BASE + 0)
+ #define V4L2_CID_USER_IMX500_NETWORK_FW_FD (V4L2_CID_USER_IMX500_BASE + 1)
++#define V4L2_CID_USER_IMX500_READ_REGISTER (V4L2_CID_USER_IMX500_BASE + 2)
++#define V4L2_CID_USER_IMX500_REGISTER_IO (V4L2_CID_USER_IMX500_BASE + 3)
+ 
+ #define ONE_MIB (1024 * 1024)
+ 
+@@ -1364,6 +1366,8 @@ struct imx500 {
+ 
+ 	struct v4l2_rect inference_window;
+ 
++	u32 reg_io[3];
++
+ 	/* Current mode */
+ 	const struct imx500_mode *mode;
+ 
+@@ -1575,6 +1579,70 @@ static int imx500_set_inference_window(struct imx500 *imx500)
+ 				   ARRAY_SIZE(window_regs), NULL);
+ }
+ 
++static int imx500_set_reg_io(struct imx500 *imx500)
++{
++	int ret = 0;
++	u64 tmp, val, mask, data;
++	u32 addr;
++	int bitw, io;
++	//printk(KERN_INFO "%s r[0](h)=%08x r[1](h)=%08x r[2](h)=%08x\n", __func__, imx500->reg_io[0], imx500->reg_io[1], imx500->reg_io[2]);
++	//set data
++	addr = imx500->reg_io[0] & 0x0000FFFF;
++	bitw = imx500->reg_io[0] >> 16 & 0x000000FF;
++	io = imx500->reg_io[0] >> 24 & 0x00000001;
++	val = imx500->reg_io[1];
++	mask = imx500->reg_io[2];
++	//printk(KERN_INFO "%s address(h):%04x bitw:%2d io:%1d value(h):%08llx mask(h):%08llx\n", __func__, addr, bitw, io, val, mask);
++	//0 is no mask
++	if (mask == 0)
++		mask = ~mask;
++	switch (bitw) {
++	case 16: //16bit (2byte)
++		ret = cci_read(imx500->regmap, CCI_REG16(addr), &tmp, NULL);
++		mask = 0x0000FFFF & mask;
++		if (ret >= 0) {
++			if (io > 0) {
++				data = (val & mask) | (tmp & ~mask);
++				ret = cci_write(imx500->regmap, CCI_REG16(addr),
++						data, NULL);
++			} else
++				data = tmp & mask;
++			//printk(KERN_INFO "%s mask(h):%08llx val(h):%08llx tmp(h):%08llx data(h):%08llx ret:%d\n", __func__, mask, val, tmp, data, ret);
++		}
++		break;
++	case 32: //32bit (4byte)
++		ret = cci_read(imx500->regmap, CCI_REG32(addr), &tmp, NULL);
++		mask = 0xFFFFFFFF & mask;
++		if (ret >= 0) {
++			if (io > 0) {
++				data = (val & mask) | (tmp & ~mask);
++				ret = cci_write(imx500->regmap, CCI_REG32(addr),
++						data, NULL);
++			} else
++				data = tmp & mask;
++			//printk(KERN_INFO "%s mask(h):%08llx val(h):%08llx tmp(h):%08llx data(h):%08llx ret:%d\n", __func__, mask, val, tmp, data, ret);
++		}
++		break;
++	default: //8bit (1byte)
++		ret = cci_read(imx500->regmap, CCI_REG8(addr), &tmp, NULL);
++		mask = 0x000000FF & mask;
++		if (ret >= 0) {
++			if (io > 0) {
++				data = (val & mask) | (tmp & ~mask);
++				ret = cci_write(imx500->regmap, CCI_REG8(addr),
++						data, NULL);
++			} else
++				data = tmp & mask;
++			//printk(KERN_INFO "%s mask(h):%08llx val(h):%08llx tmp(h):%08llx data(h):%08llx ret:%d\n", __func__, mask, val, tmp, data, ret);
++		}
++	}
++	if (ret >= 0) {
++		imx500->reg_io[1] = data;
++		imx500->reg_io[2] = mask;
++	}
++	return ret;
++}
++
+ static int imx500_reg_val_write_cbk(void *arg,
+ 				    const struct cci_reg_sequence *reg)
+ {
+@@ -1874,6 +1942,7 @@ static int imx500_set_ctrl(struct v4l2_ctrl *ctrl)
+ 		container_of(ctrl->handler, struct imx500, ctrl_handler);
+ 	struct i2c_client *client = v4l2_get_subdevdata(&imx500->sd);
+ 	int ret = 0;
++	u64 tmp;
+ 
+ 	if (ctrl->id == V4L2_CID_USER_IMX500_NETWORK_FW_FD) {
+ 		/* Reset state of the control. */
+@@ -1974,6 +2043,20 @@ static int imx500_set_ctrl(struct v4l2_ctrl *ctrl)
+ 		       sizeof(struct v4l2_rect));
+ 		ret = imx500_set_inference_window(imx500);
+ 		break;
++	case V4L2_CID_USER_IMX500_READ_REGISTER:
++		ret = cci_read(imx500->regmap, CCI_REG16(ctrl->val), &tmp,
++			       NULL);
++		//printk(KERN_INFO "%s address(h):%04x value(d):%llu (h):%04llx\n", __func__, ctrl->val, tmp, tmp);
++		if (ret >= 0)
++			ctrl->val = tmp;
++		break;
++	case V4L2_CID_USER_IMX500_REGISTER_IO:
++		memcpy(&imx500->reg_io, ctrl->p_new.p_u32, sizeof(u32) * 3);
++		ret = imx500_set_reg_io(imx500);
++		if (ret >= 0)
++			memcpy(ctrl->p_new.p_u32, &imx500->reg_io,
++			       sizeof(u32) * 3);
++		break;
+ 	default:
+ 		dev_info(&client->dev,
+ 			 "ctrl(id:0x%x,val:0x%x) is not handled\n", ctrl->id,
+@@ -2828,6 +2911,32 @@ static const struct v4l2_ctrl_config network_fw_fd = {
+ 	.def		= -1,
+ };
+ 
++/* Custom control for camera address read */
++static const struct v4l2_ctrl_config cam_read_register = {
++	.name = "IMX500 Read Register",
++	.id = V4L2_CID_USER_IMX500_READ_REGISTER,
++	.ops = &imx500_ctrl_ops,
++	.type = V4L2_CTRL_TYPE_INTEGER,
++	.flags = V4L2_CTRL_FLAG_EXECUTE_ON_WRITE,
++	.min = 0,
++	.max = U16_MAX,
++	.step = 1,
++	.def = 53314,
++};
++/* Custom control for camera address io */
++static const struct v4l2_ctrl_config cam_register_io = {
++	.name = "IMX500 Register IO",
++	.id = V4L2_CID_USER_IMX500_REGISTER_IO,
++	.dims = { 3 },
++	.ops = &imx500_ctrl_ops,
++	.type = V4L2_CTRL_TYPE_U32,
++	.elem_size = sizeof(u32),
++	.min = 0x00,
++	.max = U32_MAX,
++	.step = 1,
++	.def = 0,
++};
++
+ /* Initialize control handlers */
+ static int imx500_init_controls(struct imx500 *imx500)
+ {
+@@ -2858,6 +2967,11 @@ static int imx500_init_controls(struct imx500 *imx500)
+ 	if (imx500->link_freq)
+ 		imx500->link_freq->flags |= V4L2_CTRL_FLAG_READ_ONLY;
+ 
++	//init parameter
++	imx500->reg_io[0] = 0;
++	imx500->reg_io[1] = 0;
++	imx500->reg_io[2] = 0;
++
+ 	/*
+ 	 * Create the controls here, but mode specific limits are setup
+ 	 * in the imx500_set_framing_limits() call below.
+@@ -2892,6 +3006,10 @@ static int imx500_init_controls(struct imx500 *imx500)
+ 	imx500->network_fw_ctrl =
+ 		v4l2_ctrl_new_custom(ctrl_hdlr, &network_fw_fd, NULL);
+ 
++	//imx500->imx500_read_register = v4l2_ctrl_new_custom(ctrl_hdlr, &cam_read_register, NULL);
++	v4l2_ctrl_new_custom(ctrl_hdlr, &cam_read_register, NULL);
++	v4l2_ctrl_new_custom(ctrl_hdlr, &cam_register_io, NULL);
++
+ 	if (ctrl_hdlr->error) {
+ 		ret = ctrl_hdlr->error;
+ 		dev_err(&client->dev, "%s control init failed (%d)\n", __func__,
