@@ -54,6 +54,10 @@
     imx500_register_io 0x00982903 (u32)    : min=0 max=4294967295 step=1 default=0 dims=[3] flags=has-payload
     ```
 
+## How To Use
+
+- Please refer : [python code](./python_code_from_japan/python)
+
 ## Reference
 
 - https://www.raspberrypi.com/documentation/computers/linux_kernel.html#building
