@@ -26,14 +26,19 @@
     git apply imx500_c_i2c_enable.patch
     ```
 
-4. Build
+4. Build kernel
 
     ```bash
     ./build_kernel.sh
+    ```
+
+5. Update kenel
+
+    ```bash
     ./update_kernel.sh
     ```
 
-5. Reboot
+6. Reboot
 
     ```bash
     sudo reboot
