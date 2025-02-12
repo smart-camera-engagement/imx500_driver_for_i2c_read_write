@@ -3,8 +3,17 @@
 ## Pre Conditions
  
 - RaspberryPi5 64 bit kernel
+    - 6.6.74-v8-16k+
+
+    ```bash
+    pi@raspberrypi:~/work/imx500_driver_for_i2c_read_write $ uname -r
+    6.6.74-v8-16k+
+    ```
+
 - Kernel source tree is already cloned.
     - Reference : https://www.raspberrypi.com/documentation/computers/linux_kernel.html#building
+    - Commit
+        - 6d16e47ca139ba64c5daedf06e72f2774adbdc48
 
 ## Build Steps
 
