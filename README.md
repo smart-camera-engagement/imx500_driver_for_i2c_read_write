@@ -56,7 +56,7 @@
 
 ## How To Use
 
-- Please refer : [python code](./python_code_from_japan/python)
+- Please refer : [python code](./original_from_japan/python)
 
 ## Reference
 
