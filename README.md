@@ -11,7 +11,7 @@
 1. Move to kernel code tree
 
     ```bash
-    cd <kernel clone dir>/kernel
+    cd <kernel clone dir>/linux
     ```
 
 2. Copy build scripts and patch
