@@ -41,11 +41,11 @@
 
 ## Check v4l2-ctl
 
+- Check if imx500_read_register and imx500_register_io are listed.
+
     ```bash
     v4l2-ctl -d /dev/v4l-subdev2 --list-ctrls | grep imx500
     ```
-
-- Check if imx500_read_register and imx500_register_io are listed.
 
     ```bash
     imx500_inference_windows 0x00982900 (u32)    : min=0 max=4032 step=1 default=0 dims=[4] flags=has-payload, execute-on-write
