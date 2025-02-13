@@ -1,6 +1,6 @@
 #!/bin/bash
 
-KERNEL=kernel_2712
+export KERNEL=kernel_2712
 
 sudo make modules_install
 
