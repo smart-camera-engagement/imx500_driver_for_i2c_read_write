@@ -1,5 +1,7 @@
 #!/bin/bash
 
+KERNEL=kernel_2712
+
 sudo make modules_install
 
 sudo cp /boot/firmware/$KERNEL.img /boot/firmware/$KERNEL-backup.img
