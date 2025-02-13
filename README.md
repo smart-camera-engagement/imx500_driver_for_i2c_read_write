@@ -2,9 +2,18 @@
 
 ## Pre Conditions
  
-- RaspberryPi5 64 bit kernel
 - Kernel source tree is already cloned.
     - Reference : https://www.raspberrypi.com/documentation/computers/linux_kernel.html#building
+    - Commit
+        - 6d16e47ca139ba64c5daedf06e72f2774adbdc48
+    - RaspberryPi5 64 bit kernel
+        - 6.6.74-v8-16k+
+
+            ```bash
+            pi@raspberrypi:~/work/imx500_driver_for_i2c_read_write $ uname -r
+            6.6.74-v8-16k+
+            ```
+
 
 ## Build Steps
 
@@ -26,14 +35,19 @@
     git apply imx500_c_i2c_enable.patch
     ```
 
-4. Build
+4. Build kernel
 
     ```bash
-    ./update_kernel.sh
     ./build_kernel.sh
     ```
 
-5. Reboot
+5. Update kenel
+
+    ```bash
+    ./update_kernel.sh
+    ```
+
+6. Reboot
 
     ```bash
     sudo reboot
